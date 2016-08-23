@@ -16,6 +16,7 @@
   function LogglyTracker() {
     this.key = false;
     this.sendConsoleErrors = false;
+    this.shouldSendCalback;
     this.tag = 'jslogger';
     this.useDomainProxy = false;
   }
@@ -43,15 +44,26 @@
       var _onerror = window.onerror;
       //send console error messages to Loggly
       window.onerror = function (msg, url, line, col){
-        tracker.push({
-          category: 'BrowserJsException',
-          exception: {
-            message: msg,
-            url: url,
-            lineno: line,
-            colno: col,
-          }
-        });
+        var sendError = true;
+        if (tracker.shouldSendCallbackr !== 'undefined') {
+          sendError = tracker.shouldSendCallback(msg, url, line, col);
+        }
+
+        if (sendError) {
+          console.error("loggly is sending error");
+          tracker.push({
+            category: 'BrowserJsException',
+            exception: {
+              message: msg,
+              url: url,
+              lineno: line,
+              colno: col,
+            }
+          });
+        }
+        else {
+          console.error("loggly not sending error");
+        }
 
         if (_onerror && typeof _onerror === 'function') {
           _onerror.apply(window, arguments);
@@ -93,6 +105,11 @@
           this.session_id = uuid();
           this.setCookie(this.session_id);
         }
+      }
+    },
+    shouldSendCallback: function(callback) {
+      if (callback !== 'undefined') {
+        this.shouldSendCallback = callback;
       }
     },
     push: function(data) {
