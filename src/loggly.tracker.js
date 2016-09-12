@@ -16,7 +16,7 @@
   function LogglyTracker() {
     this.key = false;
     this.sendConsoleErrors = false;
-    this.shouldSendCalback;
+    this.shouldSendCallback;
     this.tag = 'jslogger';
     this.useDomainProxy = false;
   }
@@ -45,7 +45,7 @@
       //send console error messages to Loggly
       window.onerror = function (msg, url, line, col){
         var sendError = true;
-        if (tracker.shouldSendCallbackr !== 'undefined') {
+        if (tracker.shouldSendCallback !== 'undefined') {
           sendError = tracker.shouldSendCallback(msg, url, line, col);
         }
 
