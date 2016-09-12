@@ -13,10 +13,20 @@
     });
   }
 
+  function extend(obj, src) {
+    for (var key in src) {
+      if (src.hasOwnProperty(key)) {
+        obj[key] = src[key];
+      }
+    }
+    return obj;
+  }
+
   function LogglyTracker() {
     this.key = false;
     this.sendConsoleErrors = false;
     this.shouldSendCallback;
+    this.errorContext = {};
     this.tag = 'jslogger';
     this.useDomainProxy = false;
   }
@@ -40,18 +50,18 @@
   function setSendConsoleError(tracker, sendConsoleErrors) {
     tracker.sendConsoleErrors = sendConsoleErrors;
 
-    if(tracker.sendConsoleErrors === true){
+    if (tracker.sendConsoleErrors === true){
       var _onerror = window.onerror;
-      //send console error messages to Loggly
-      window.onerror = function (msg, url, line, col){
+      // Send console error messages to Loggly
+      window.onerror = function (msg, url, line, col) {
         var sendError = true;
         if (tracker.shouldSendCallback !== 'undefined') {
           sendError = tracker.shouldSendCallback(msg, url, line, col);
         }
 
         if (sendError) {
-          console.error("loggly is sending error");
-          tracker.push({
+          var ctx = tracker.errorContext || {};
+          var error_data = {
             category: 'BrowserJsException',
             exception: {
               message: msg,
@@ -59,7 +69,10 @@
               lineno: line,
               colno: col,
             }
-          });
+          };
+          var data = extend(ctx, error_data);
+          console.log("[Loggly] Sending console error with data:", data);
+          tracker.push(data);
         }
         else {
           console.error("loggly not sending error");
@@ -112,6 +125,9 @@
         this.shouldSendCallback = callback;
       }
     },
+    setErrorContext: function(ctx_map) {
+      this.errorContext = ctx_map;
+    },
     push: function(data) {
       var type = typeof data;
 
@@ -134,6 +150,10 @@
 
         if(data.sendConsoleErrors !== undefined) {
           setSendConsoleError(self, data.sendConsoleErrors);
+        }
+
+        if (data.consoleErrorContext !== undefined) {
+          self.setErrorContext(data.consoleErrorContext);
         }
 
         if(data.tag) {
